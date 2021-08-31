@@ -11,7 +11,7 @@ import kotlin.jvm.Volatile
 /**
  * Asynchronous client-side class that attempts to synchronize a client model and a server model,
  * allowing for purely client-side "virtual" effects while waiting for server updates.
- * Best enjoyed with an immutable model data class :) (to ensure thread-safety).
+ * Best enjoyed with an immutable model data class :) But will work with a mutable-compatible ModelUpdater.
  *
  * @param M Model class
  * @param U Model update class
@@ -25,7 +25,7 @@ import kotlin.jvm.Volatile
 open class ModelSynchronizer<M, U>(
     initialModel: M,
     private val modelUpdater: ModelUpdater<M, U>,
-    private val serverApi: SynchronizerServerApi<U>,
+    private val serverApi: SynchServerProxy<U>,
     enclosingContext: CoroutineContext = Dispatchers.Default,
     startListening: Boolean = true,
 ) {
@@ -48,7 +48,7 @@ open class ModelSynchronizer<M, U>(
 
     // ModelSynchronizer gets its own CoroutineScope, by default in Dispatchers.Default,
     private val scope: CoroutineScope = CoroutineScope(enclosingContext + Job())
-    private lateinit var mainJob: Job
+    private lateinit var serverRetrievalJob: Job
 
     @Volatile private var lastServerModel: M = initialModel
     @Volatile private var lastClientModel: M = initialModel
@@ -114,10 +114,9 @@ open class ModelSynchronizer<M, U>(
     fun start() {
         if (!running) {
             onStart()
-            mainJob = scope.launch {
+            serverRetrievalJob = scope.launch {
                 running = true
                 serverApi.fromServer.collect { receiveServerUpdate(it) }
-                running = false
                 stop()
             }
         } else {
@@ -128,8 +127,9 @@ open class ModelSynchronizer<M, U>(
 
     fun stop() {
         if (running) {
+            running = false
             onStop()
-            mainJob.cancel()
+            scope.cancel()
             onMainJobCancelled()
         } else {
             error("This ModelSynchronizer is already stopped")
@@ -234,7 +234,7 @@ open class ModelSynchronizer<M, U>(
 /**
  * Server API for ModelSynchronizer
  */
-interface SynchronizerServerApi<U> {
+interface SynchServerProxy<U> {
 
     /**
      * Flow from server.
