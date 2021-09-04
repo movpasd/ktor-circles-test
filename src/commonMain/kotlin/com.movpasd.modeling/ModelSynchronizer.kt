@@ -8,6 +8,9 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.Volatile
 
+// TODO: Needs to be re-written to remove asynchronicity. This should be delegated to the ModelUpdater an Model.
+// Write a ModelAdapter interface for use in the ModelSynchronizer.
+
 /**
  * Asynchronous client-side class that attempts to synchronize a client model and a server model,
  * allowing for purely client-side "virtual" effects while waiting for server updates.
@@ -18,15 +21,15 @@ import kotlin.jvm.Volatile
  *
  * @param initialModel Initial instance of M
  * @param modelUpdater ModelUpdater for the model
- * @param serverApi SynchronizerServerApi instance: connect this up to the server
- * @param enclosingContext Optional context for the synchronizer coroutines. Defaults to Dispatchers.Default
+ * @param serverProxy SynchronizerServerApi instance: connect this up to the server
+ * @param coroutineContext The synchronizer's internal scope's job will be a child of coroutineContext.job
  * @param startListening Whether to start the server-listen coroutines. If set to false, you must manually .start()
  */
 open class ModelSynchronizer<M, U>(
     initialModel: M,
     private val modelUpdater: ModelUpdater<M, U>,
-    private val serverApi: SynchServerProxy<U>,
-    enclosingContext: CoroutineContext = Dispatchers.Default,
+    private val serverProxy: SynchServerProxy<U>,
+    coroutineContext: CoroutineContext,
     startListening: Boolean = true,
 ) {
 
@@ -37,6 +40,8 @@ open class ModelSynchronizer<M, U>(
 
     val model: M
         get() = lastClientModel
+    val serverModel: M
+        get() = lastServerModel
 
     @Volatile var running: Boolean = false
         private set
@@ -46,9 +51,8 @@ open class ModelSynchronizer<M, U>(
      * --- Internal properties ---
      */
 
-    // ModelSynchronizer gets its own CoroutineScope, by default in Dispatchers.Default,
-    private val scope: CoroutineScope = CoroutineScope(enclosingContext + Job())
-    private lateinit var serverRetrievalJob: Job
+    private val scope = CoroutineScope(coroutineContext + Job(coroutineContext.job))
+    private var serverRetrievalJob: Job? = null
 
     @Volatile private var lastServerModel: M = initialModel
     @Volatile private var lastClientModel: M = initialModel
@@ -79,7 +83,7 @@ open class ModelSynchronizer<M, U>(
      */
     fun submitUpdate(update: U) {
 
-        val processedUpdate = onSubmittedToSynchronizer(update, false)
+        var processedUpdate = onSubmittedToSynchronizer(update, false)
 
         scope.launch {
 
@@ -87,10 +91,10 @@ open class ModelSynchronizer<M, U>(
                 lastClientModel = modelUpdater.apply(lastClientModel, processedUpdate)
             }
 
-            onClientModelUpdated(update, false)
+            processedUpdate = onClientModelUpdated(processedUpdate, false)
 
             try {
-                val success = serverApi.submit(processedUpdate)
+                val success = serverProxy.submit(processedUpdate)
                 if (success) {
                     onSubmissionSuccess(processedUpdate)
                 } else {
@@ -113,10 +117,10 @@ open class ModelSynchronizer<M, U>(
      */
     fun start() {
         if (!running) {
+            running = true
             onStart()
             serverRetrievalJob = scope.launch {
-                running = true
-                serverApi.fromServer.collect { receiveServerUpdate(it) }
+                serverProxy.fromServer.collect { receiveServerUpdate(it); yield() }
                 stop()
             }
         } else {
@@ -130,6 +134,7 @@ open class ModelSynchronizer<M, U>(
             running = false
             onStop()
             scope.cancel()
+            serverRetrievalJob = null
             onMainJobCancelled()
         } else {
             error("This ModelSynchronizer is already stopped")

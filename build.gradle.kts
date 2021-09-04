@@ -12,6 +12,7 @@ version = "1.0-SNAPSHOT"
 val ktorVersion = "1.5.2"
 val jvmTargetVersion = "1.8"
 val kotlinReactVersion = "17.0.2-pre.206-kotlin-1.5.10"
+val logbackVersion = "1.2.3"
 
 
 repositories {
@@ -58,8 +59,11 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-server-netty:$ktorVersion")
+                implementation("io.ktor:ktor-websockets:$ktorVersion")
                 implementation("io.ktor:ktor-html-builder:$ktorVersion")
+                implementation("ch.qos.logback:logback-classic:$logbackVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.2")
+                implementation("io.ktor:ktor-serialization:$ktorVersion")
             }
         }
         val jvmTest by getting
@@ -68,6 +72,8 @@ kotlin {
                 implementation("org.jetbrains.kotlin-wrappers:kotlin-react:$kotlinReactVersion")
                 implementation("org.jetbrains.kotlin-wrappers:kotlin-react-dom:$kotlinReactVersion")
                 implementation("io.ktor:ktor-client-js:$ktorVersion")
+                implementation("org.jetbrains:kotlin-styled:5.2.1-pre.148-kotlin-1.4.21")
+                implementation(npm("styled-components", "~5.2.1"))
             }
         }
         val jsTest by getting
@@ -83,6 +89,7 @@ application {
 
 tasks.named<Copy>("jvmProcessResources") {
     val jsBrowserDistribution = tasks.named("jsBrowserDistribution")
+    this.duplicatesStrategy = DuplicatesStrategy.WARN
     from(jsBrowserDistribution)
 }
 
