@@ -84,7 +84,7 @@ kotlin {
 }
 
 application {
-    mainClass.set("MainServerKt")
+    mainClass.set("io.ktor.server.netty.EngineMain")
 }
 
 tasks.named<Copy>("jvmProcessResources") {

@@ -1,9 +1,6 @@
 package com.movpasd.ktorcirclestest.model
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 
 class AppModel(val players: List<Player> = listOf())
@@ -23,14 +20,4 @@ data class AppModelUpdate(
     val players: List<Player>,
 ) {
     constructor (player: Player) : this(listOf(player))
-}
-
-
-fun AppModelUpdate.serialized(): String {
-    return Json.encodeToString(this)
-}
-
-
-fun deserializeToUpdate(s: String): AppModelUpdate {
-    return Json.decodeFromString(s)
 }
