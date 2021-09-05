@@ -20,8 +20,10 @@ data class Player(
 
 @Serializable
 data class AppModelUpdate(
-    val players: List<Player>
-)
+    val players: List<Player>,
+) {
+    constructor (player: Player) : this(listOf(player))
+}
 
 
 fun AppModelUpdate.serialized(): String {
