@@ -1,7 +1,7 @@
 package com.movpasd.ktorcirclestest.client
 
 import com.movpasd.ktorcirclestest.model.AppModelUpdate
-import com.movpasd.ktorcirclestest.model.deserializeUpdate
+import com.movpasd.ktorcirclestest.model.deserializeToUpdate
 import com.movpasd.ktorcirclestest.model.serialized
 import io.ktor.client.*
 import io.ktor.client.features.websocket.*
@@ -46,7 +46,7 @@ class KtorClient(
                             println("Receiving a frame: ")
                             try {
                                 println((frame as? Frame.Text)?.readText() ?: "Couldn't read frame")
-                                val serverUpdate = deserializeUpdate((frame as? Frame.Text ?: continue).readText())
+                                val serverUpdate = deserializeToUpdate((frame as? Frame.Text ?: continue).readText())
                                 incomingQueue.add(serverUpdate)
                             } catch (e: Exception) {
                                 println(e)

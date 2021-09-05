@@ -1,5 +1,4 @@
-import com.movpasd.ktorcirclestest.model.AppModelUpdate
-import com.movpasd.ktorcirclestest.model.deserializeUpdate
+import com.movpasd.ktorcirclestest.model.deserializeToUpdate
 import com.movpasd.ktorcirclestest.model.serialized
 import io.ktor.application.*
 import io.ktor.html.respondHtml
@@ -12,8 +11,6 @@ import io.ktor.http.content.static
 import io.ktor.routing.*
 import io.ktor.websocket.*
 import kotlinx.html.*
-import kotlinx.serialization.DeserializationStrategy
-import kotlinx.serialization.json.Json
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.LinkedHashSet
@@ -75,7 +72,7 @@ fun main() {
                         val frameText = (frame as? Frame.Text)?.readText()
                         println(frameText ?: "Unknown format")
                         frameText ?: continue
-                        val updateObject = deserializeUpdate(frameText)
+                        val updateObject = deserializeToUpdate(frameText)
                         connections.forEach {
                             println("\tSending to user ${it.id}")
                             it.session.send(Frame.Text(updateObject.serialized()))

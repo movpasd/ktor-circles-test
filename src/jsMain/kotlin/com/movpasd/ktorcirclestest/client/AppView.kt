@@ -29,15 +29,7 @@ class AppView(
         if (!running) {
             running = true
             scope.launch {
-                while (isActive) {
-                    ctx.fillStyle = "rgb(255, 255, 255)"
-                    ctx.fillRect(0.0, 0.0, width, height)
-                    ctx.fillStyle = "rgb(255, 196, 196)"
-                    drawCircle(synch.serverModel.x, synch.serverModel.y, 10.0)
-                    ctx.fillStyle = "rgb(255, 0, 0)"
-                    drawCircle(synch.model.x, synch.model.y, 10.0)
-                    delay(10)
-                }
+                while (isActive) { paint() }
             }
         } else {
             error("This AppView is already running")
@@ -54,7 +46,15 @@ class AppView(
     }
 
 
-    private fun drawCircle(x: Double, y: Double, r: Double) {
+    private fun paint() {
+        for (player in synch.model.players) {
+            drawCircle(player.x, player.y, 10.0, player.color)
+        }
+    }
+
+
+    private fun drawCircle(x: Double, y: Double, r: Double, style: String? = null) {
+        style?.let { ctx.fillStyle = it }
         ctx.beginPath()
         ctx.arc(x, y, r, 0.0, 6.29)
         ctx.closePath()

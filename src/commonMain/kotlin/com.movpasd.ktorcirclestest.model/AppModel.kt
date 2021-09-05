@@ -6,15 +6,21 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 
-data class AppModel(
-    val x: Double = 0.0,
-    val y: Double = 0.0,
+class AppModel(val players: List<Player> = listOf())
+
+
+@Serializable
+data class Player(
+    val id: Int,
+    val color: String,
+    val x: Double,
+    val y: Double,
 )
+
 
 @Serializable
 data class AppModelUpdate(
-    val newx: Double,
-    val newy: Double,
+    val players: List<Player>
 )
 
 
@@ -23,6 +29,6 @@ fun AppModelUpdate.serialized(): String {
 }
 
 
-fun deserializeUpdate(s: String): AppModelUpdate {
+fun deserializeToUpdate(s: String): AppModelUpdate {
     return Json.decodeFromString(s)
 }
