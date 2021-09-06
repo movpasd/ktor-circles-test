@@ -1,7 +1,12 @@
+/**
+ * This file defines the network interface that server and client use to communicate
+ */
 package com.movpasd.ktorcirclestest.network
 
+import com.movpasd.ktorcirclestest.model.AppModelUpdate
 import com.movpasd.ktorcirclestest.model.Player
 import io.ktor.http.cio.websocket.*
+import io.ktor.util.date.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
@@ -48,23 +53,23 @@ sealed class ToServerMessage : Message() {
 
 @Serializable
 data class NewPlayerRequest(
-    override val clientId: Int,
-    override val time: Long,
     val player: Player,
+    override val clientId: Int,
+    override val time: Long = getTimeMillis(),
 ) : ToServerMessage()
 
 @Serializable
 data class MovePlayerRequest(
-    override val clientId: Int,
-    override val time: Long,
     val player: Player,
+    override val clientId: Int,
+    override val time: Long = getTimeMillis(),
 ) : ToServerMessage()
 
 @Serializable
 data class KillPlayerRequest(
-    override val clientId: Int,
-    override val time: Long,
     val player: Player,
+    override val clientId: Int,
+    override val time: Long = getTimeMillis(),
 ) : ToServerMessage()
 
 
@@ -77,24 +82,36 @@ sealed class ToClientMessage : Message()
 
 @Serializable
 data class ConnectedResponse(
-    override val time: Long,
     val clientId: Int,
+    override val time: Long = getTimeMillis(),
+) : ToClientMessage()
+
+@Serializable
+data class ServerClosedAnnouncement(
+    val reason: String = "Server has closed",
+    override val time: Long = getTimeMillis(),
 ) : ToClientMessage()
 
 @Serializable
 data class NewPlayerOrder(
-    override val time: Long,
     val player: Player,
+    override val time: Long = getTimeMillis(),
 ) : ToClientMessage()
 
 @Serializable
 data class MovePlayerOrder(
-    override val time: Long,
     val player: Player,
+    override val time: Long = getTimeMillis(),
+) : ToClientMessage()
+
+@Serializable
+data class UpdateModelOrder(
+    val model: AppModelUpdate,
+    override val time: Long = getTimeMillis(),
 ) : ToClientMessage()
 
 @Serializable
 data class KillPlayerOrder(
-    override val time: Long,
     val player: Player,
+    override val time: Long = getTimeMillis(),
 ) : ToClientMessage()

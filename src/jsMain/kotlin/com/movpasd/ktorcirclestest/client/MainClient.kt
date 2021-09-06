@@ -1,5 +1,7 @@
 package com.movpasd.ktorcirclestest.client
 
+import com.movpasd.ktorcirclestest.client.network.AppKtorClient
+import com.movpasd.ktorcirclestest.client.network.KtorClientSideProxy
 import com.movpasd.ktorcirclestest.model.AppModelSynchronizer
 import kotlinx.browser.document
 import kotlinx.browser.window
@@ -50,8 +52,8 @@ fun bindApp() {
 
     val renderingContext = canvas.getContext("2d") as CanvasRenderingContext2D
 
-    val ktorClient = KtorClient(bgScope.coroutineContext)
-    val synch = AppModelSynchronizer(KtorClientSideProxy(ktorClient), bgScope.coroutineContext)
+    val appKtorClient = AppKtorClient(bgScope.coroutineContext)
+    val synch = AppModelSynchronizer(KtorClientSideProxy(appKtorClient), bgScope.coroutineContext)
 
     val engine = AppEngine(synch, document, uiScope.coroutineContext)
     val appView = AppView(synch, renderingContext, uiScope.coroutineContext)
@@ -64,7 +66,7 @@ fun bindApp() {
             appView.stop()
             engine.stop()
             synch.stop()
-            ktorClient.stop()
+            appKtorClient.stop()
 
             uiScope.cancel()
             bgScope.cancel()
