@@ -13,6 +13,8 @@ val ktorVersion = "1.5.2"
 val jvmTargetVersion = "1.8"
 val kotlinReactVersion = "17.0.2-pre.206-kotlin-1.5.10"
 val logbackVersion = "1.2.3"
+val napierVersion = "2.1.0"
+val benasherUuidVersion = "0.3.1"
 
 
 repositories {
@@ -49,6 +51,8 @@ kotlin {
             dependencies {
                 implementation("io.ktor:ktor-client-core:$ktorVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+                implementation("io.github.aakira:napier:$napierVersion")
+                implementation("com.benasher44:uuid:$benasherUuidVersion")
             }
         }
         val commonTest by getting {
