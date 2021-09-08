@@ -8,6 +8,10 @@ import io.ktor.features.*
 import io.ktor.routing.*
 import io.ktor.serialization.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 import kotlinx.html.*
 
 
@@ -30,7 +34,12 @@ fun Application.mainModule() {
     install(WebSockets)
     install(ContentNegotiation) { json() }
 
-    val appServer = AppServer()
+    val mainScope = MainScope()
+    val appServer = AppServer(mainScope.coroutineContext)
+
+    environment.monitor.subscribe(ApplicationStopped) {
+        appServer.close()
+    }
 
     routing {
         route("/") {
