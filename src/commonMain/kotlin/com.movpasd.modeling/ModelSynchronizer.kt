@@ -8,8 +8,11 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.Volatile
 
-// TODO: Needs to be re-written to remove asynchronicity. This should be delegated to the ModelUpdater an Model.
-// Write a ModelAdapter interface for use in the ModelSynchronizer.
+// TODO: Don't like this class. Thinking about removing it.
+// 1) It has its own lifecycle, which seems unnecessary. The synchronizer should just dispatch
+//    to the appropriate interfaces.
+// 2) Adding a layer between the incoming ToClientMessages and the updating of the internal model
+//    is a good idea in principle, but I think this class might not be flexible enough
 
 /**
  * Asynchronous client-side class that attempts to synchronize a client model and a server model,

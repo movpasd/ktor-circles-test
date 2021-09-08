@@ -13,6 +13,10 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
 
 
+// TODO: Add UUID's to messages
+// TODO: Add multi-message Transaction system
+
+
 /*
  * Methods
  */
@@ -49,27 +53,25 @@ class UnreadableMessage(val exceptionMessage: String? = null) : Message() {
 @Serializable
 sealed class ToServerMessage : Message() {
     abstract val clientId: Int
+    override val time = getTimeMillis()
 }
 
 @Serializable
 data class NewPlayerRequest(
     val player: Player,
     override val clientId: Int,
-    override val time: Long = getTimeMillis(),
 ) : ToServerMessage()
 
 @Serializable
 data class MovePlayerRequest(
     val player: Player,
     override val clientId: Int,
-    override val time: Long = getTimeMillis(),
 ) : ToServerMessage()
 
 @Serializable
 data class KillPlayerRequest(
     val player: Player,
     override val clientId: Int,
-    override val time: Long = getTimeMillis(),
 ) : ToServerMessage()
 
 
@@ -78,40 +80,33 @@ data class KillPlayerRequest(
  */
 
 @Serializable
-sealed class ToClientMessage : Message()
+sealed class ToClientMessage : Message() {
+    override val time = getTimeMillis()
+}
 
 @Serializable
-data class ConnectedResponse(
+class RejectionResponse(
+    val reason: String,
+// TODO: Add ID of rejected message
+// (This thing will be used in the transaction system)
+) : ToClientMessage()
+
+@Serializable
+data class IdAssignmentOrder(
     val clientId: Int,
-    override val time: Long = getTimeMillis(),
 ) : ToClientMessage()
 
 @Serializable
 data class ServerClosedAnnouncement(
     val reason: String = "Server has closed",
-    override val time: Long = getTimeMillis(),
 ) : ToClientMessage()
 
 @Serializable
-data class NewPlayerOrder(
-    val player: Player,
-    override val time: Long = getTimeMillis(),
-) : ToClientMessage()
-
-@Serializable
-data class MovePlayerOrder(
-    val player: Player,
-    override val time: Long = getTimeMillis(),
+data class TakeControlOrder(
+    val playerId: Int,
 ) : ToClientMessage()
 
 @Serializable
 data class UpdateModelOrder(
     val model: AppModelUpdate,
-    override val time: Long = getTimeMillis(),
-) : ToClientMessage()
-
-@Serializable
-data class KillPlayerOrder(
-    val player: Player,
-    override val time: Long = getTimeMillis(),
 ) : ToClientMessage()
