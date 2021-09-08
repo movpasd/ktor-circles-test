@@ -3,26 +3,8 @@ package com.movpasd.ktorcirclestest.model
 import kotlinx.serialization.Serializable
 
 
-data class AppModel(val players: List<Player> = listOf()) {
-
-    fun withNewPlayer(player: Player): AppModel {
-        return AppModel(this.players + player)
-    }
-
-    fun withPlayerRemoved(player: Player): AppModel {
-        return AppModel(this.players.filter { it.id != player.id })
-    }
-
-    fun withPlayerUpdated(newPlayerState: Player): AppModel {
-        return AppModel(this.players.map { player ->
-            if (player.id == newPlayerState.id) {
-                newPlayerState
-            } else player
-        })
-    }
-
-}
-
+@Serializable
+data class AppModel(val players: List<Player> = listOf())
 
 @Serializable
 data class Player(
@@ -32,11 +14,12 @@ data class Player(
     val y: Double,
 )
 
-
 @Serializable
-data class AppModelUpdate(
-    val players: List<Player>,
-) {
-    constructor (player: Player) : this(listOf(player))
-    constructor (model: AppModel) : this(model.players)
-}
+data class PlayerMovement(
+    val playerId: Int,
+    val xNew: Double,
+    val yNew: Double,
+)
+
+
+fun Player.moved(movement: PlayerMovement) = Player(this.id, this.color, movement.xNew, movement.yNew)
