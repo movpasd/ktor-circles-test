@@ -1,46 +1,37 @@
 package com.movpasd.ktorcirclestest.server
 
-import com.movpasd.ktorcirclestest.model.AppModel
-import com.movpasd.ktorcirclestest.model.AppModelUpdate
-import com.movpasd.ktorcirclestest.model.Player
+import com.movpasd.ktorcirclestest.model.*
 import com.movpasd.ktorcirclestest.network.*
+import com.movpasd.napier.Log
 import io.ktor.http.cio.websocket.*
-import io.ktor.util.date.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.html.currentTimeMillis
-import java.time.Instant.now
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.logging.Level
-import java.util.logging.Logger
 import kotlin.coroutines.CoroutineContext
 
 
 class AppServer(enclosingContext: CoroutineContext) {
 
-    class Connection(val session: DefaultWebSocketSession) {
+    class Connection(private val session: DefaultWebSocketSession) {
 
         companion object {
-            private var lastId = AtomicInteger(0)
+            private val lastId = AtomicInteger(0)
         }
 
         val id = lastId.getAndIncrement()
-        val outgoingMessages = Channel<Message>()
 
         suspend fun close(reason: String = "Server closed") {
             session.send(ServerClosedAnnouncement(reason).toFrame())
         }
 
+        suspend fun send(msg: Message) {
+            session.send(msg.toFrame())
+        }
+
     }
 
-    private object Log {
-        private val logger = Logger.getLogger("AppServer")
-        fun info(s: String) = logger.log(Level.INFO, s)
-        fun warn(s: String) = logger.log(Level.WARNING, s)
-        fun err(s: String) = logger.log(Level.SEVERE, s)
-    }
+    private val log = Log(this::class)
 
     // Network properties
     private val connections = Collections.synchronizedSet<Connection>(LinkedHashSet())
@@ -51,6 +42,8 @@ class AppServer(enclosingContext: CoroutineContext) {
 
     // Game logic properties
     var model = AppModel()
+    val updater = AppModelUpdater()
+    val playerCounter = AtomicInteger(0)
 
 
     fun close() {
@@ -68,28 +61,76 @@ class AppServer(enclosingContext: CoroutineContext) {
 
     suspend fun connectWebSocket(session: DefaultWebSocketServerSession) = session.apply {
 
+        // Register connection
         val thisConnection = Connection(this)
         connections += thisConnection
 
-        Log.info("New connection with User #${thisConnection.id}")
+        // Set up connection including connection id assignment
+        log.info("New connection with User #${thisConnection.id}")
+        thisConnection.send(IdAssignmentOrder(thisConnection.id))
 
-        send(ConnectedResponse(thisConnection.id).toFrame())
+        // Create a new player
+        val thisPlayerId = createNewPlayer(thisConnection)
 
+        // Dispatch incoming messages to the handler
         for (frame in incoming) {
-            Log.info("Received frame from user #${thisConnection.id}")
-            val message = frame.toMessage()
-            messageHandler.handle(message, this@AppServer, thisConnection)
+            log.info("Received frame from user #${thisConnection.id}")
+            messageHandler.handle(frame.toMessage(), this@AppServer, thisConnection)
         }
 
-        Log.info("Ended connection with User #${thisConnection.id}")
+        // Kill player
+        killPlayer(thisPlayerId)
+
+        // Disconnect player
+        thisConnection.close("Client disconnected")
+        log.info("Ended connection with User #${thisConnection.id}")
+
+    }
+
+    /*
+     * Game logic TODO: should be separated into an engine class
+     */
+
+    // TODO: Add client message authentication
+
+    fun createNewPlayer(controllerCxn: Connection): Int {
+        val newPlayerId = playerCounter.getAndIncrement()
+        val update = NewPlayerUpdate(Player(
+            id = newPlayerId,
+            color = "rgb(255, 0, 0)",
+            x = 100.0, y = 100.0,
+        ))
+        model = updater.apply(model, update)
+        val msg = UpdateModelOrder(update)
+        scope.launch {
+            broadcastWithJob(msg)
+                .join()
+            controllerCxn.send(TakeControlOrder(newPlayerId))
+        }
+        return newPlayerId
+    }
+
+    fun killPlayer(playerId: Int) {
+        val update = KillPlayerUpdate(playerId)
+        model = updater.apply(model, update)
+        broadcast(UpdateModelOrder(update))
     }
 
     /*
      * Interface to ServerMsgHandler
      */
 
-    fun broadcastOrder(msg: ToClientMessage) {
-        connections.forEach { scope.launch { it.outgoingMessages.send(msg) } }
+    fun broadcast(msg: ToClientMessage) {
+        connections.forEach { scope.launch { it.send(msg) } }
+    }
+
+    fun broadcastWithJob(msg: ToClientMessage): Job = scope.launch {
+        connections.map { launch {it.send(msg)} }
+            .joinAll()
+    }
+
+    fun narrowcast(msg: ToClientMessage, connection: Connection) = scope.launch {
+        connection.send(msg)
     }
 
 }
