@@ -61,6 +61,8 @@ class AppServer(enclosingContext: CoroutineContext) {
 
     suspend fun connectWebSocket(session: DefaultWebSocketServerSession) = session.apply {
 
+        // TODO: all Ktor objects ought to be abstracted to an interface
+
         // Register connection
         val thisConnection = Connection(this)
         connections += thisConnection

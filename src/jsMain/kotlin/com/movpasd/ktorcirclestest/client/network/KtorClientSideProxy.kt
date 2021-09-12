@@ -1,16 +1,16 @@
-package com.movpasd.ktorcirclestest.client
+package com.movpasd.ktorcirclestest.client.network
 
 import com.movpasd.ktorcirclestest.model.AppModelUpdate
 import com.movpasd.modeling.SynchServerProxy
 
 
-class KtorClientSideProxy(private val ktorClient: KtorClient) : SynchServerProxy<AppModelUpdate> {
+class KtorClientSideProxy(private val appKtorClient: AppKtorClient) : SynchServerProxy<AppModelUpdate> {
 
-    override val fromServer = ktorClient.incomingUpdatesAsFlow()
+    override val fromServer = appKtorClient.incomingUpdatesAsFlow()
 
     override suspend fun submit(update: AppModelUpdate): Boolean {
         return try {
-            ktorClient.sendClientUpdate(update)
+            appKtorClient.sendClientUpdate(update)
             true
         } catch (e: Exception) {
             false

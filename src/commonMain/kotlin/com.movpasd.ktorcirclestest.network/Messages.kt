@@ -7,6 +7,7 @@ import com.movpasd.ktorcirclestest.model.AppModelUpdate
 import com.movpasd.ktorcirclestest.model.Player
 import io.ktor.http.cio.websocket.*
 import io.ktor.util.date.*
+import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
@@ -21,7 +22,7 @@ import kotlinx.serialization.decodeFromString
  * Methods
  */
 
-fun Message.toFrame() = Frame.Text(Json.encodeToString(this))
+fun Message.toFrame() = Frame.Text(Json.encodeToString<Message>(this))
 fun Frame.toMessage(): Message {
     return try {
         Json.decodeFromString<Message>((this as Frame.Text).readText())

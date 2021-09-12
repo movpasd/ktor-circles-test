@@ -3,6 +3,8 @@ package com.movpasd.ktorcirclestest.client
 import com.movpasd.ktorcirclestest.client.network.AppKtorClient
 import com.movpasd.ktorcirclestest.client.network.KtorClientSideProxy
 import com.movpasd.ktorcirclestest.model.AppModelSynchronizer
+import io.github.aakira.napier.DebugAntilog
+import io.github.aakira.napier.Napier
 import kotlinx.browser.document
 import kotlinx.browser.window
 import react.*
@@ -22,6 +24,9 @@ import org.w3c.dom.events.KeyboardEvent
 
 
 fun main() {
+
+    // Initialise Napier logging system
+    Napier.base(DebugAntilog())
 
     // Create window
     window.onload = {
